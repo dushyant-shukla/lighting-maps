@@ -75,7 +75,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SotutionDir)libraries\glfw\include;$(SoutionDir)libraries\glad\include;$(SolutionDir)libraries\glm\glm-0.9.9.6\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SotutionDir)source;$(SotutionDir)source\rendering;$(SotutionDir)libraries\stbi;$(SotutionDir)libraries\glfw\include;$(SoutionDir)libraries\glad\include;$(SolutionDir)libraries\glm\glm-0.9.9.6\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
@@ -91,7 +91,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(SotutionDir)libraries\glfw\include;$(SoutionDir)libraries\glad\include;$(SolutionDir)libraries\glm\glm-0.9.9.6\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SotutionDir)source;$(SotutionDir)source\rendering;$(SotutionDir)libraries\stbi;$(SotutionDir)libraries\glfw\include;$(SoutionDir)libraries\glad\include;$(SolutionDir)libraries\glm\glm-0.9.9.6\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
@@ -109,7 +109,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)libraries\glfw;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SotutionDir)libraries\glfw\include;$(SoutionDir)libraries\glad\include;$(SolutionDir)libraries\glm\glm-0.9.9.6\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SotutionDir)source;$(SotutionDir)source\rendering;$(SotutionDir)libraries\stbi;$(SotutionDir)libraries\glfw\include;$(SoutionDir)libraries\glad\include;$(SolutionDir)libraries\glm\glm-0.9.9.6\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -118,18 +118,28 @@
       <AdditionalLibraryDirectories>$(SolutionDir)libraries\glfw;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SotutionDir)libraries\glfw\include;$(SoutionDir)libraries\glad\include;$(SolutionDir)libraries\glm\glm-0.9.9.6\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SotutionDir)source;$(SotutionDir)source\rendering;$(SotutionDir)libraries\stbi;$(SotutionDir)libraries\glfw\include;$(SoutionDir)libraries\glad\include;$(SolutionDir)libraries\glm\glm-0.9.9.6\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="libraries\glad\src\glad.c" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="resource-loader.cpp" />
-    <ClCompile Include="shader.cpp" />
-    <ClCompile Include="stb_image.cpp" />
+    <ClCompile Include="libraries\stbi\stb_image.cpp" />
+    <ClCompile Include="source\main.cpp" />
+    <ClCompile Include="source\rendering\IndexBuffer.cpp" />
+    <ClCompile Include="source\rendering\Renderer.cpp" />
+    <ClCompile Include="source\rendering\shader.cpp" />
+    <ClCompile Include="source\rendering\VertexArray.cpp" />
+    <ClCompile Include="source\rendering\VertexBuffer.cpp" />
+    <ClCompile Include="source\rendering\VertexBufferLayout.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stb_image.h" />
+    <ClInclude Include="libraries\stbi\stb_image.h" />
+    <ClInclude Include="source\Core.h" />
+    <ClInclude Include="source\rendering\IndexBuffer.h" />
+    <ClInclude Include="source\rendering\Renderer.h" />
+    <ClInclude Include="source\rendering\VertexArray.h" />
+    <ClInclude Include="source\rendering\VertexBuffer.h" />
+    <ClInclude Include="source\rendering\VertexBufferLayout.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
