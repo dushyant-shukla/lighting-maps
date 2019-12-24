@@ -1,4 +1,6 @@
 # lighting-maps
 Lighting maps implementation in OpenGL
 
-![](render.gif)
+<p align="center">
+  ![](render.gif)
+</p>
