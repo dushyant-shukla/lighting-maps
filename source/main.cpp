@@ -5,8 +5,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "stb_image.h"
-
 #include <iostream>
 
 #include "Core.h"
@@ -16,6 +14,7 @@
 #include "VertexBufferLayout.h"
 #include "VertexArray.h"
 #include "ShaderProgram.h"
+#include "Texture2D.h"
 
 
 int main() {
@@ -60,8 +59,6 @@ int main() {
 		lightProgram.LinkProgram();
 		unsigned int lightProgramId = lightProgram.GetProgramId();
 
-		unsigned int diffuseMap, specularMap, emissionMap;
-
 		//////////////////////////////////// object settings //////////////////////////////////////
 
 		glUseProgram(programId);
@@ -74,58 +71,14 @@ int main() {
 		cubeVertexLayout.Push<float>(2, 2, GL_FLOAT, sizeof(float) * 3);    // texture coordinates
 		cubeVertexArray.AddAttributes(cubeVertexBuffer, cubeVertexLayout);
 
-		glGenTextures(1, &diffuseMap);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, diffuseMap);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		int width, height, nrChannels;
-		unsigned char* data = stbi_load("./assets/container.png", &width, &height, &nrChannels, 0);
-		if (data) {
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-			glGenerateMipmap(GL_TEXTURE_2D);
-		}
-		else {
-			std::cout << "\nFailed to load texture..." << std::endl;
-		}
-		stbi_image_free(data);
+		Texture2D diffuseMap(GL_TEXTURE0, "./assets/container.png");
+		diffuseMap.GeneratePngTexture();
 
-		glGenTextures(1, &specularMap);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, specularMap);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		data = stbi_load("./assets/container-specular.png", &width, &height, &nrChannels, 0);
-		if (data) {
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-			glGenerateMipmap(GL_TEXTURE_2D);
-		}
-		else {
-			std::cout << "\nFailed to load specular texture..." << std::endl;
-		}
-		stbi_image_free(data);
+		Texture2D specularMap(GL_TEXTURE1, "./assets/container-specular.png");
+		specularMap.GeneratePngTexture();
 
-
-		glGenTextures(1, &emissionMap);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, emissionMap);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		data = stbi_load("./assets/matrix.jpg", &width, &height, &nrChannels, 0);
-		if (data) {
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-			glGenerateMipmap(GL_TEXTURE_2D);
-		}
-		else {
-			std::cout << "\nFailed to load specular texture..." << std::endl;
-		}
-		stbi_image_free(data);
+		Texture2D emissionMap(GL_TEXTURE2, "./assets/matrix.jpg");
+		emissionMap.GenerateJpgTexture();
 
 		cubeVertexBuffer.Unbind();
 		cubeVertexArray.Unbind();
@@ -178,16 +131,13 @@ int main() {
 			glUniform3fv(glGetUniformLocation(programId, "lightPosition"), 1, LIGHT_POSITION);
 			glUniform3fv(glGetUniformLocation(programId, "eyePosition"), 1, EYE_POSITION);
 
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, diffuseMap);
+			diffuseMap.Bind();
 			glUniform1i(glGetUniformLocation(programId, "material.diffuse"), 0);
 
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, specularMap);
+			specularMap.Bind();
 			glUniform1i(glGetUniformLocation(programId, "material.specular"), 1);
 
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, emissionMap);
+			emissionMap.Bind();
 			glUniform1i(glGetUniformLocation(programId, "material.emission"), 2);
 
 			glUniform1f(glGetUniformLocation(programId, "material.shininess"), 32.0f);
@@ -218,11 +168,6 @@ int main() {
 			glUniform1ui(glGetUniformLocation(lightProgramId, "debug"), GL_FALSE);
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
-
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			glUniform1ui(glGetUniformLocation(lightProgramId, "debug"), GL_TRUE);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 			lightVertexArray.Unbind();
 			glUseProgram(0);
