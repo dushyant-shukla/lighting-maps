@@ -127,7 +127,7 @@
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\rendering\IndexBuffer.cpp" />
     <ClCompile Include="source\rendering\Renderer.cpp" />
-    <ClCompile Include="source\rendering\shader.cpp" />
+    <ClCompile Include="source\rendering\ShaderProgram.cpp" />
     <ClCompile Include="source\rendering\VertexArray.cpp" />
     <ClCompile Include="source\rendering\VertexBuffer.cpp" />
     <ClCompile Include="source\rendering\VertexBufferLayout.cpp" />
@@ -137,9 +137,16 @@
     <ClInclude Include="source\Core.h" />
     <ClInclude Include="source\rendering\IndexBuffer.h" />
     <ClInclude Include="source\rendering\Renderer.h" />
+    <ClInclude Include="source\rendering\ShaderProgram.h" />
     <ClInclude Include="source\rendering\VertexArray.h" />
     <ClInclude Include="source\rendering\VertexBuffer.h" />
     <ClInclude Include="source\rendering\VertexBufferLayout.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="source\shaders\cube-shader.frag" />
+    <None Include="source\shaders\cube-shader.vert" />
+    <None Include="source\shaders\light-shader.frag" />
+    <None Include="source\shaders\light-shader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

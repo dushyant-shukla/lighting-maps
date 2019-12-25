@@ -4,7 +4,6 @@
 
 #include "Core.h"
 
-
 #define GLCall(x) GLClearError();\
 		x;\
 		ASSERT(GLCheckError(#x, __FILE__, __LINE__))

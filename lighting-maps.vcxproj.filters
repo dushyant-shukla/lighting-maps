@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
     </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{9351e04e-c019-43d7-b663-cf606d510d7a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="libraries\glad\src\glad.c">
@@ -22,9 +25,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\rendering\shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\rendering\IndexBuffer.cpp">
@@ -40,6 +40,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\rendering\VertexBufferLayout.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\ShaderProgram.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -65,5 +68,22 @@
     <ClInclude Include="source\Core.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\rendering\ShaderProgram.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="source\shaders\cube-shader.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="source\shaders\cube-shader.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="source\shaders\light-shader.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="source\shaders\light-shader.frag">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
