@@ -380,7 +380,7 @@ int main() {
 		glUniform3fv(glGetUniformLocation(programId, "lightColor"), 1, LIGHT_COLOR);
 		glUniform3fv(glGetUniformLocation(programId, "lightPosition"), 1, LIGHT_POSITION);
 		float   eyePosition[] = { cameraPos.x, cameraPos.y, cameraPos.z };
-		glUniform3fv(glGetUniformLocation(programId, "eyePosition"), 1, eyePosition/*EYE_POSITION*/);
+		glUniform3fv(glGetUniformLocation(programId, "eyePosition"), 1, eyePosition);
 
 		diffuseMap.Bind();
 		glUniform1i(glGetUniformLocation(programId, "material.diffuse"), 0);
@@ -434,8 +434,7 @@ int main() {
 		glUniform3fv(glGetUniformLocation(normalMappingProgramId, "lightColor"), 1, LIGHT_COLOR);
 		glUniform3fv(glGetUniformLocation(normalMappingProgramId, "lightPosition"), 1, LIGHT_POSITION);
 		float eyePosition2[] = { cameraPos.x, cameraPos.y, cameraPos.z };
-		glUniform3fv(glGetUniformLocation(programId, "eyePosition"), 1, eyePosition2/*EYE_POSITION*/);
-		//glUniform3fv(glGetUniformLocation(normalMappingProgramId, "eyePosition"), 1, cameraPos/*EYE_POSITION*/);
+		glUniform3fv(glGetUniformLocation(normalMappingProgramId, "eyePosition"), 1, eyePosition2);
 
 		floorDiffuseMap.Bind();
 		glUniform1i(glGetUniformLocation(normalMappingProgramId, "material.diffuse"), 0);
@@ -450,43 +449,33 @@ int main() {
 		{
 			if (normal && !parallex)
 			{
-				//glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_normalMappingSubroutineIndex);
-				glUniform1i(glGetUniformLocation(normalMappingProgramId, "shadeTeq"), 1);
+				glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_normalMappingSubroutineIndex);
 				glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &normalMappingSubroutineIndex);
 			}
 			else if (parallex)
 			{
-				//glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_parallexMappingSubroutineIndex);
-				glUniform1i(glGetUniformLocation(normalMappingProgramId, "shadeTeq"), 1);
+				glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_parallexMappingSubroutineIndex);
 				glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &parallexMappingSubroutineIndex);
 			}
 			else
 			{
-				//glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_defaultShadingSubroutineIndex);
-				glUniform1i(glGetUniformLocation(normalMappingProgramId, "shadeTeq"), 0);
+				glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_defaultShadingSubroutineIndex);
 				glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &texturedShadingSubroutineIndex);
 			}
 		}
 		else
 		{
-			//glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_defaultShadingSubroutineIndex);
-			glUniform1i(glGetUniformLocation(normalMappingProgramId, "shadeTeq"), 1);
+			glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_defaultShadingSubroutineIndex);
 			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &defaultShadingSubroutineIndex);
 		}
-
-		//glUniform1i(glGetUniformLocation(normalMappingProgramId, "shadeTeq"), 1);
-		//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 2, subroutineIndexes);
-		//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &phongLightingSubroutineIndex);
-		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_defaultShadingSubroutineIndex);
-
 
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, -0.65f, 0.0f));
 		model = glm::scale(model, glm::vec3(5.0f, 0.02f, 5.0f));
-		glUniformMatrix4fv(glGetUniformLocation(programId, "model"), 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix4fv(glGetUniformLocation(normalMappingProgramId, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
 		normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-		glUniformMatrix3fv(glGetUniformLocation(programId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+		glUniformMatrix3fv(glGetUniformLocation(normalMappingProgramId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -506,10 +495,10 @@ int main() {
 		model = glm::translate(model, glm::vec3(0.0f, -0.3f, -1.5f));
 		model = glm::scale(model, glm::vec3(5.0f, 1.5f, 0.5f));
 		//model = glm::scale(model, glm::vec3(5.0f, 5.0f, 0.5f));
-		glUniformMatrix4fv(glGetUniformLocation(programId, "model"), 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix4fv(glGetUniformLocation(normalMappingProgramId, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
 		normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-		glUniformMatrix3fv(glGetUniformLocation(programId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+		glUniformMatrix3fv(glGetUniformLocation(normalMappingProgramId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -528,10 +517,10 @@ int main() {
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(1.5f, -0.3f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.5f, 1.5f, 5.0f));
-		glUniformMatrix4fv(glGetUniformLocation(programId, "model"), 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix4fv(glGetUniformLocation(normalMappingProgramId, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
 		normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-		glUniformMatrix3fv(glGetUniformLocation(programId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+		glUniformMatrix3fv(glGetUniformLocation(normalMappingProgramId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -539,10 +528,10 @@ int main() {
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-1.5f, -0.3f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.5f, 1.5f, 5.0f));
-		glUniformMatrix4fv(glGetUniformLocation(programId, "model"), 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix4fv(glGetUniformLocation(normalMappingProgramId, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
 		normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-		glUniformMatrix3fv(glGetUniformLocation(programId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+		glUniformMatrix3fv(glGetUniformLocation(normalMappingProgramId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
