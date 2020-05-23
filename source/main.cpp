@@ -173,16 +173,8 @@ int main() {
 	normalMappingProgram.AddShader("./source/shaders/normal-mapping.frag", GL_FRAGMENT_SHADER);
 	normalMappingProgram.LinkProgram();
 	unsigned int normalMappingProgramId = normalMappingProgram.GetProgramId();
-	GLuint phongLightingSubroutineIndex;
-	GLuint defaultLightingSubroutineIndex;
-	GLuint defaultShadingSubroutineIndex;
-	GLuint normalMappingSubroutineIndex;
-	GLuint parallexMappingSubroutineIndex;
-
-	GLint colorOrTextureUniform;
-	GLint normalOrParallexUniform;
-
-	GLuint subroutineIndexes[2];
+	GLuint defaultShadingSubroutineIndex, texturedShadingSubroutineIndex, normalMappingSubroutineIndex, parallexMappingSubroutineIndex;
+	GLuint vs_defaultShadingSubroutineIndex, vs_normalMappingSubroutineIndex, vs_parallexMappingSubroutineIndex;
 
 	//////////////////////////////////// general shaders //////////////////////////////////////
 
@@ -288,8 +280,30 @@ int main() {
 	glGetIntegerv(GL_MAX_SUBROUTINE_UNIFORM_LOCATIONS, &maxSubU);
 	printf("Max Subroutines: %d  Max Subroutine Uniforms: %d\n", maxSub, maxSubU);
 
+	glGetProgramStageiv(normalMappingProgramId, GL_VERTEX_SHADER, GL_ACTIVE_SUBROUTINE_UNIFORMS, &countActiveSU);
+	printf("Active Vertex Subroutines: %d\n", countActiveSU);
+
+	for (int i = 0; i < countActiveSU; ++i) {
+
+		glGetActiveSubroutineUniformName(normalMappingProgramId, GL_VERTEX_SHADER, i, 256, &len, name);
+
+		printf("Suroutine Uniform: %d name: %s\n", i, name);
+		glGetActiveSubroutineUniformiv(normalMappingProgramId, GL_VERTEX_SHADER, i, GL_NUM_COMPATIBLE_SUBROUTINES, &numCompS);
+
+		int* s = (int*)malloc(sizeof(int) * numCompS);
+		glGetActiveSubroutineUniformiv(normalMappingProgramId, GL_VERTEX_SHADER, i, GL_COMPATIBLE_SUBROUTINES, s);
+		printf("Compatible Subroutines:\n");
+		for (int j = 0; j < numCompS; ++j) {
+
+			glGetActiveSubroutineName(normalMappingProgramId, GL_VERTEX_SHADER, s[j], 256, &len, name);
+			printf("\t%d - %s\n", s[j], name);
+		}
+		printf("\n");
+		free(s);
+	}
+
 	glGetProgramStageiv(normalMappingProgramId, GL_FRAGMENT_SHADER, GL_ACTIVE_SUBROUTINE_UNIFORMS, &countActiveSU);
-	printf("Active Subroutines: %d\n", countActiveSU);
+	printf("Active Fragment Subroutines: %d\n", countActiveSU);
 
 	for (int i = 0; i < countActiveSU; ++i) {
 
@@ -310,15 +324,14 @@ int main() {
 		free(s);
 	}
 
-	phongLightingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_FRAGMENT_SHADER, "PhongWithTexture");
-	defaultLightingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_FRAGMENT_SHADER, "PhongWithColor");
-
 	defaultShadingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_FRAGMENT_SHADER, "DefaultShading");
+	texturedShadingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_FRAGMENT_SHADER, "TexturedShading");
 	normalMappingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_FRAGMENT_SHADER, "NormalMapping");
 	parallexMappingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_FRAGMENT_SHADER, "ParallexMapping");
 
-	colorOrTextureUniform = glGetSubroutineUniformLocation(normalMappingProgramId, GL_FRAGMENT_SHADER, "colorTechnique");
-	normalOrParallexUniform = glGetSubroutineUniformLocation(normalMappingProgramId, GL_FRAGMENT_SHADER, "shadingTechnique");
+	vs_defaultShadingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_VERTEX_SHADER, "VS_DefaultShading");
+	vs_normalMappingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_VERTEX_SHADER, "VS_NormalMapping");
+	vs_parallexMappingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_VERTEX_SHADER, "VS_ParallexMapping");
 
 	glUseProgram(0);
 
@@ -405,7 +418,7 @@ int main() {
 		glUseProgram(0);
 		cubeVertexArray.Unbind();
 
-		////////////////////////// CUBE - 2 (PLATFORM) shaded with normal map //////////////////////////////////
+		////////////////////////// Objects shaded with normal-mapping //////////////////////////////////
 
 		glUseProgram(normalMappingProgramId);
 
@@ -433,32 +446,38 @@ int main() {
 
 		glUniform1f(glGetUniformLocation(normalMappingProgramId, "material.shininess"), 64.0f);
 
-		glUniform1ui(glGetUniformLocation(normalMappingProgramId, "parallexMapping"), parallexMapping);
-		glUniform1ui(glGetUniformLocation(normalMappingProgramId, "normalMapping"), normalMapping);
-
 		if (texture)
 		{
-			subroutineIndexes[0] = phongLightingSubroutineIndex;
+			if (normal && !parallex)
+			{
+				//glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_normalMappingSubroutineIndex);
+				glUniform1i(glGetUniformLocation(normalMappingProgramId, "shadeTeq"), 1);
+				glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &normalMappingSubroutineIndex);
+			}
+			else if (parallex)
+			{
+				//glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_parallexMappingSubroutineIndex);
+				glUniform1i(glGetUniformLocation(normalMappingProgramId, "shadeTeq"), 1);
+				glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &parallexMappingSubroutineIndex);
+			}
+			else
+			{
+				//glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_defaultShadingSubroutineIndex);
+				glUniform1i(glGetUniformLocation(normalMappingProgramId, "shadeTeq"), 0);
+				glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &texturedShadingSubroutineIndex);
+			}
 		}
 		else
 		{
-			subroutineIndexes[0] = defaultLightingSubroutineIndex;
+			//glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_defaultShadingSubroutineIndex);
+			glUniform1i(glGetUniformLocation(normalMappingProgramId, "shadeTeq"), 1);
+			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &defaultShadingSubroutineIndex);
 		}
 
-		if (normal && !parallex)
-		{
-			subroutineIndexes[1] = normalMappingSubroutineIndex;
-		}
-		else if (parallex)
-		{
-			subroutineIndexes[1] = parallexMappingSubroutineIndex;
-		}
-		else
-		{
-			subroutineIndexes[1] = defaultShadingSubroutineIndex;
-		}
-
-		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 2, subroutineIndexes);
+		//glUniform1i(glGetUniformLocation(normalMappingProgramId, "shadeTeq"), 1);
+		//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 2, subroutineIndexes);
+		//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &phongLightingSubroutineIndex);
+		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_defaultShadingSubroutineIndex);
 
 
 		model = glm::mat4(1.0f);
