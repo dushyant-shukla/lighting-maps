@@ -91,5 +91,7 @@
     <None Include="source\shaders\light-shader.frag">
       <Filter>shaders</Filter>
     </None>
+    <None Include="source\shaders\normal-mapping.vert" />
+    <None Include="source\shaders\normal-mapping.frag" />
   </ItemGroup>
 </Project>

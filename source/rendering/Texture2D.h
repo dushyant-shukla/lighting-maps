@@ -17,7 +17,7 @@ public:
 	Texture2D(unsigned int textureUnit, std::string texturePath);
 	~Texture2D();
 
-	void GenerateJpgTexture();
+	void GenerateTexture();
 	void GeneratePngTexture();
 
 	void Bind();

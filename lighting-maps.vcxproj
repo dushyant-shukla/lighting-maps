@@ -149,6 +149,8 @@
     <None Include="source\shaders\cube-shader.vert" />
     <None Include="source\shaders\light-shader.frag" />
     <None Include="source\shaders\light-shader.vert" />
+    <None Include="source\shaders\normal-mapping.frag" />
+    <None Include="source\shaders\normal-mapping.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

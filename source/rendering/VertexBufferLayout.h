@@ -28,12 +28,12 @@ public:
 	const std::vector<VertexAttribute>& GetVertexAttributes() const;
 
 	template <typename T>
-	void Push(unsigned int location, unsigned int size, unsigned int type, unsigned int offset) {
+	void Push(unsigned int location, unsigned int size, unsigned int offset) {
 		static_assert(false);
 	}
 
 	template <>
-	void Push<float>(unsigned int location, unsigned int size, unsigned int type, unsigned int offset) {
+	void Push<float>(unsigned int location, unsigned int size, unsigned int offset) {
 		mVertexAttributes.push_back({ location, size, GL_FLOAT, GL_FALSE, mStride, offset });
 	}
 
