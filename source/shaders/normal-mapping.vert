@@ -67,47 +67,5 @@ void VS_ParallexMapping()
 
 void main() {
 	gl_Position = projection * view * model * vec4(position, 2.0f);
-
-	//if(shadeTeq == 0)
-	//{
-	//	outNormal = normalize(normalMatrix * normal);
-	//	outFragPosition = vec3(model * vec4(position, 2.0f));
-	//	outLightPosition = lightPosition;
-	//	outEyePosition = eyePosition;
-	//	textureCoordinates = inTextureCoordinates;
-	//}
-	//
-	//if(shadeTeq == 1)
-	//{
-	//	vec3 eyeSpaceNormal = normalize(normalMatrix * normal);
-	//	vec3 eyeSpaceTangent = normalize(normalMatrix * tangent);
-	//	eyeSpaceTangent = normalize(eyeSpaceTangent - dot(eyeSpaceTangent, eyeSpaceNormal) * eyeSpaceNormal);
-	//	//vec3 eyeSpaceoutBiTangent = normalMatrix * biTangent;
-	//	vec3 eyeSpaceoutBiTangent = cross(eyeSpaceNormal, eyeSpaceTangent);
-	//	mat3 tangentSpaceMatrix = transpose(mat3(eyeSpaceTangent, eyeSpaceoutBiTangent, eyeSpaceNormal)); // c1, c2, c3
-	//	outFragPosition = tangentSpaceMatrix * vec3(model * vec4(position, 2.0f));
-	//	outLightPosition = tangentSpaceMatrix * lightPosition;
-	//	outEyePosition = tangentSpaceMatrix * eyePosition;
-	//	textureCoordinates = inTextureCoordinates;
-	//	
-	//	//TangentSpaceCalculations();
-	//}
-	
-	//outNormal = normalize(normalMatrix * normal);
-	//outFragPosition = vec3(model * vec4(position, 2.0f));
-	//outLightPosition = lightPosition;
-	//outEyePosition = eyePosition;
-	//textureCoordinates = inTextureCoordinates;
-
-	//vec3 eyeSpaceNormal = normalize(normalMatrix * normal);
-	//vec3 eyeSpaceTangent = normalize(normalMatrix * tangent);
-	//eyeSpaceTangent = normalize(eyeSpaceTangent - dot(eyeSpaceTangent, eyeSpaceNormal) * eyeSpaceNormal); // re-orthogonalize the two vectors
-	//vec3 eyeSpaceoutBiTangent = cross(eyeSpaceNormal, eyeSpaceTangent);
-	//mat3 tangentSpaceMatrix = transpose(mat3(eyeSpaceTangent, eyeSpaceoutBiTangent, eyeSpaceNormal)); // c1, c2, c3
-	//outFragPosition = tangentSpaceMatrix * vec3(model * vec4(position, 2.0f));
-	//outLightPosition = tangentSpaceMatrix * lightPosition;
-	//outEyePosition = tangentSpaceMatrix * eyePosition;
-	//textureCoordinates = inTextureCoordinates;
-	
 	vs_shadingTechnique();
 }
