@@ -93,5 +93,9 @@
     </None>
     <None Include="source\shaders\normal-mapping.vert" />
     <None Include="source\shaders\normal-mapping.frag" />
+    <None Include="source\shaders\cube-shader-deferred-1.frag" />
+    <None Include="source\shaders\cube-shader-deferred-1.vert" />
+    <None Include="source\shaders\cube-shader-deferred-2.frag" />
+    <None Include="source\shaders\cube-shader-deferred-2.vert" />
   </ItemGroup>
 </Project>

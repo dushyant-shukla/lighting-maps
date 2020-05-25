@@ -145,6 +145,10 @@
     <ClInclude Include="source\rendering\VertexBufferLayout.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="source\shaders\cube-shader-deferred-1.frag" />
+    <None Include="source\shaders\cube-shader-deferred-1.vert" />
+    <None Include="source\shaders\cube-shader-deferred-2.frag" />
+    <None Include="source\shaders\cube-shader-deferred-2.vert" />
     <None Include="source\shaders\cube-shader.frag" />
     <None Include="source\shaders\cube-shader.vert" />
     <None Include="source\shaders\light-shader.frag" />

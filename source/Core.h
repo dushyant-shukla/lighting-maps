@@ -7,6 +7,17 @@
 
 #define ASSERT(x) if(!(x)) __debugbreak();
 
+static const float SCR_WIDTH = 1000.0f;
+static const float SCR_HEIGHT = 600.0f;
+
+static float const QUAD_VERTEX_DATA[] = {
+	// position			// texture
+   -1.0f,  1.0f, 0.0f,		0.0f, 1.0f,
+   -1.0f, -1.0f, 0.0f,		0.0f, 0.0f,
+	1.0f,  1.0f, 0.0f,		1.0f, 1.0f,
+	1.0f, -1.0f, 0.0f,		1.0f, 0.0f,
+};
+
 static float CUBE_VERTEX_DATA[] = {
 			// position(3)				texture(2)			normal(3)				tangent(3)				bi-tangent(3)
 			//0		1		2			3		4			5		6		7		8		9		10		11		12		13

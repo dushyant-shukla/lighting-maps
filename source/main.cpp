@@ -117,6 +117,50 @@ void ScrollCallback(GLFWwindow* window, double xOffset, double yOffset)
 	}
 }
 
+void CreateGbuffer(GLuint& gBuffer, GLuint& gDepthBuffer, GLuint& gPosition, GLuint& gNormal, GLuint& gColor)
+{
+	glGenFramebuffers(1, &gBuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+
+	// position color buffer
+	glGenTextures(1, &gPosition);
+	glBindTexture(GL_TEXTURE_2D, gPosition);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
+
+	// normal color buffer
+	glGenTextures(1, &gNormal);
+	glBindTexture(GL_TEXTURE_2D, gNormal);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
+
+	// color buffer
+	glGenTextures(1, &gColor);
+	glBindTexture(GL_TEXTURE_2D, gColor);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gColor, 0);
+
+	unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+	glDrawBuffers(3, attachments);
+
+	glGenRenderbuffers(1, &gDepthBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, gDepthBuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, gDepthBuffer);
+	
+	// finally check if framebuffer is complete
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Framebuffer not complete!" << std::endl;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 int main() {
 
 	if (!glfwInit()) {
@@ -153,14 +197,25 @@ int main() {
 
 	CalculateCubeTangentsAndBitangents();
 
+	GLuint gBuffer, gDepthBuffer, gPosition, gNormal, gColor;
+	CreateGbuffer(gBuffer, gDepthBuffer, gPosition, gNormal, gColor);
+
 	//create shader programs
 	ShaderProgram cubeProgram;
-	cubeProgram.AddShader("./source/shaders/cube-shader.vert", GL_VERTEX_SHADER);
-	cubeProgram.AddShader("./source/shaders/cube-shader.frag", GL_FRAGMENT_SHADER);
+	//cubeProgram.AddShader("./source/shaders/cube-shader.vert", GL_VERTEX_SHADER);
+	//cubeProgram.AddShader("./source/shaders/cube-shader.frag", GL_FRAGMENT_SHADER);
+	cubeProgram.AddShader("./source/shaders/cube-shader-deferred-1.vert", GL_VERTEX_SHADER);
+	cubeProgram.AddShader("./source/shaders/cube-shader-deferred-1.frag", GL_FRAGMENT_SHADER);
 	cubeProgram.LinkProgram();
-	unsigned int programId = cubeProgram.GetProgramId();
-	GLuint colorSubroutineIndex;
-	GLuint textureSubroutineIndex;
+	unsigned int geometryPassProgramId = cubeProgram.GetProgramId();
+
+	ShaderProgram cubeProgram2;
+	//cubeProgram.AddShader("./source/shaders/cube-shader.vert", GL_VERTEX_SHADER);
+	//cubeProgram.AddShader("./source/shaders/cube-shader.frag", GL_FRAGMENT_SHADER);
+	cubeProgram2.AddShader("./source/shaders/cube-shader-deferred-2.vert", GL_VERTEX_SHADER);
+	cubeProgram2.AddShader("./source/shaders/cube-shader-deferred-2.frag", GL_FRAGMENT_SHADER);
+	cubeProgram2.LinkProgram();
+	unsigned int lightPassProgramId = cubeProgram2.GetProgramId();
 
 	ShaderProgram lightProgram;
 	lightProgram.AddShader("./source/shaders/light-shader.vert", GL_VERTEX_SHADER);
@@ -168,19 +223,11 @@ int main() {
 	lightProgram.LinkProgram();
 	unsigned int lightProgramId = lightProgram.GetProgramId();
 
-	ShaderProgram normalMappingProgram;
-	normalMappingProgram.AddShader("./source/shaders/normal-mapping.vert", GL_VERTEX_SHADER);
-	normalMappingProgram.AddShader("./source/shaders/normal-mapping.frag", GL_FRAGMENT_SHADER);
-	normalMappingProgram.LinkProgram();
-	unsigned int normalMappingProgramId = normalMappingProgram.GetProgramId();
-	GLuint defaultShadingSubroutineIndex, texturedShadingSubroutineIndex, normalMappingSubroutineIndex, parallexMappingSubroutineIndex;
-	GLuint vs_defaultShadingSubroutineIndex, vs_normalMappingSubroutineIndex, vs_parallexMappingSubroutineIndex;
-
 	//////////////////////////////////// general shaders //////////////////////////////////////
 
 	VertexBuffer cubeVertexBuffer(CUBE_VERTEX_DATA, sizeof(CUBE_VERTEX_DATA));
 
-	glUseProgram(programId);
+	glUseProgram(geometryPassProgramId);
 
 	VertexArray cubeVertexArray;
 	VertexBufferLayout cubeVertexLayout(14 * sizeof(float));
@@ -188,154 +235,24 @@ int main() {
 	cubeVertexLayout.Push<float>(1, 3, sizeof(float) * 5);    // normal vertex attribute
 	cubeVertexLayout.Push<float>(2, 2, sizeof(float) * 3);    // texture coordinates
 	cubeVertexArray.AddAttributes(cubeVertexBuffer, cubeVertexLayout);
-
-	Texture2D diffuseMap(GL_TEXTURE0, "./assets/container.png");
-	diffuseMap.GenerateTexture();
-
-	Texture2D specularMap(GL_TEXTURE1, "./assets/container-specular.png");
-	specularMap.GenerateTexture();
-
-	Texture2D emissionMap(GL_TEXTURE2, "./assets/matrix.jpg");
-	emissionMap.GenerateTexture();
-
-	printf("general shader:\n");
-	int maxSub, maxSubU, activeS, countActiveSU;
-	char name[256]; int len, numCompS;
-
-	glGetIntegerv(GL_MAX_SUBROUTINES, &maxSub);
-	glGetIntegerv(GL_MAX_SUBROUTINE_UNIFORM_LOCATIONS, &maxSubU);
-	printf("Max Subroutines: %d  Max Subroutine Uniforms: %d\n", maxSub, maxSubU);
-
-	glGetProgramStageiv(programId, GL_FRAGMENT_SHADER, GL_ACTIVE_SUBROUTINE_UNIFORMS, &countActiveSU);
-	printf("Active Subroutines: %d\n", countActiveSU);
-
-	for (int i = 0; i < countActiveSU; ++i) {
-
-		glGetActiveSubroutineUniformName(programId, GL_FRAGMENT_SHADER, i, 256, &len, name);
-
-		printf("Suroutine Uniform: %d name: %s\n", i, name);
-		glGetActiveSubroutineUniformiv(programId, GL_FRAGMENT_SHADER, i, GL_NUM_COMPATIBLE_SUBROUTINES, &numCompS);
-
-		int* s = (int*)malloc(sizeof(int) * numCompS);
-		glGetActiveSubroutineUniformiv(programId, GL_FRAGMENT_SHADER, i, GL_COMPATIBLE_SUBROUTINES, s);
-		printf("Compatible Subroutines:\n");
-		for (int j = 0; j < numCompS; ++j) {
-
-			glGetActiveSubroutineName(programId, GL_FRAGMENT_SHADER, s[j], 256, &len, name);
-			printf("\t%d - %s\n", s[j], name);
-		}
-		printf("\n");
-		free(s);
-	}
-
-	textureSubroutineIndex = glGetSubroutineIndex(programId, GL_FRAGMENT_SHADER, "PhongLightingWithTexture");
-	colorSubroutineIndex = glGetSubroutineIndex(programId, GL_FRAGMENT_SHADER, "PhongLightingDefault");
-
-	//cubeVertexBuffer.Unbind();
-	//cubeVertexArray.Unbind();
-	diffuseMap.Unbind();
-	specularMap.Unbind();
-	emissionMap.Unbind();
 	glUseProgram(0);
 
-	//////////////////////////////////////// normal-mapping shaders //////////////////////////////////////////
+	glUseProgram(lightPassProgramId);
 
-	glUseProgram(normalMappingProgramId);
+	VertexBuffer quadVertexBuffer(QUAD_VERTEX_DATA, sizeof(QUAD_VERTEX_DATA));
+	VertexArray quadVertexArray;
+	VertexBufferLayout quadVertexLayout(5 * sizeof(float));
+	quadVertexLayout.Push<float>(0, 3, 0);						// position vertex attribute
+	quadVertexLayout.Push<float>(1, 2, sizeof(float) * 3);		// texture coordinates
+	quadVertexArray.AddAttributes(quadVertexBuffer, quadVertexLayout);
 
-	VertexArray cubeVertexArray2;
-	VertexBufferLayout cubeVertexLayout2(14 * sizeof(float));
-	cubeVertexLayout2.Push<float>(0, 3, 0);					// position vertex attribute
-	cubeVertexLayout2.Push<float>(1, 3, sizeof(float) * 5);    // normal vertex attribute
-	cubeVertexLayout2.Push<float>(2, 2, sizeof(float) * 3);    // texture coordinates
-	cubeVertexLayout2.Push<float>(3, 3, sizeof(float) * 8);
-	cubeVertexLayout2.Push<float>(3, 3, sizeof(float) * 11);
-	cubeVertexArray2.AddAttributes(cubeVertexBuffer, cubeVertexLayout2);
-
-	//Texture2D diffuseMap2(GL_TEXTURE0, "./assets/brickwall.jpg");
-	//diffuseMap2.GenerateTexture();
-	//Texture2D floorDiffuseMap(GL_TEXTURE0, "./assets/pebbles/Pebbles_019_Base Color.jpg");
-	Texture2D floorDiffuseMap(GL_TEXTURE0, "./assets/stones/Stone_Path_003_baseColor.jpg");
-	floorDiffuseMap.GenerateTexture();
-
-	//Texture2D normalMap(GL_TEXTURE1, "./assets/brickwall_normal.jpg");
-	//Texture2D floorNormalMap(GL_TEXTURE1, "./assets/pebbles/Pebbles_019_Normal.jpg");
-	Texture2D floorNormalMap(GL_TEXTURE1, "./assets/stones/Stone_Path_003_normal.jpg");
-	floorNormalMap.GenerateTexture();
-	Texture2D floorDepthMap(GL_TEXTURE2, "./assets/stones/Stone_Path_003_height.png");
-	floorDepthMap.GenerateTexture();
-
-	Texture2D wallDiffuseMap(GL_TEXTURE0, "./assets/walls/bricks.jpg");
-	wallDiffuseMap.GenerateTexture();
-	Texture2D wallNormalMap(GL_TEXTURE1, "./assets/walls/bricks_normal.jpg");
-	wallNormalMap.GenerateTexture();
-	Texture2D wallDepthMap(GL_TEXTURE2, "./assets/walls/bricks_heightmap.jpg");
-	wallDepthMap.GenerateTexture();
-
-
-	printf("Normal mapping shader:\n");
-	//int maxSub, maxSubU, activeS, countActiveSU;
-	//char name[256]; int len, numCompS;
-
-	glGetIntegerv(GL_MAX_SUBROUTINES, &maxSub);
-	glGetIntegerv(GL_MAX_SUBROUTINE_UNIFORM_LOCATIONS, &maxSubU);
-	printf("Max Subroutines: %d  Max Subroutine Uniforms: %d\n", maxSub, maxSubU);
-
-	glGetProgramStageiv(normalMappingProgramId, GL_VERTEX_SHADER, GL_ACTIVE_SUBROUTINE_UNIFORMS, &countActiveSU);
-	printf("Active Vertex Subroutines: %d\n", countActiveSU);
-
-	for (int i = 0; i < countActiveSU; ++i) {
-
-		glGetActiveSubroutineUniformName(normalMappingProgramId, GL_VERTEX_SHADER, i, 256, &len, name);
-
-		printf("Suroutine Uniform: %d name: %s\n", i, name);
-		glGetActiveSubroutineUniformiv(normalMappingProgramId, GL_VERTEX_SHADER, i, GL_NUM_COMPATIBLE_SUBROUTINES, &numCompS);
-
-		int* s = (int*)malloc(sizeof(int) * numCompS);
-		glGetActiveSubroutineUniformiv(normalMappingProgramId, GL_VERTEX_SHADER, i, GL_COMPATIBLE_SUBROUTINES, s);
-		printf("Compatible Subroutines:\n");
-		for (int j = 0; j < numCompS; ++j) {
-
-			glGetActiveSubroutineName(normalMappingProgramId, GL_VERTEX_SHADER, s[j], 256, &len, name);
-			printf("\t%d - %s\n", s[j], name);
-		}
-		printf("\n");
-		free(s);
-	}
-
-	glGetProgramStageiv(normalMappingProgramId, GL_FRAGMENT_SHADER, GL_ACTIVE_SUBROUTINE_UNIFORMS, &countActiveSU);
-	printf("Active Fragment Subroutines: %d\n", countActiveSU);
-
-	for (int i = 0; i < countActiveSU; ++i) {
-
-		glGetActiveSubroutineUniformName(normalMappingProgramId, GL_FRAGMENT_SHADER, i, 256, &len, name);
-
-		printf("Suroutine Uniform: %d name: %s\n", i, name);
-		glGetActiveSubroutineUniformiv(normalMappingProgramId, GL_FRAGMENT_SHADER, i, GL_NUM_COMPATIBLE_SUBROUTINES, &numCompS);
-
-		int* s = (int*)malloc(sizeof(int) * numCompS);
-		glGetActiveSubroutineUniformiv(normalMappingProgramId, GL_FRAGMENT_SHADER, i, GL_COMPATIBLE_SUBROUTINES, s);
-		printf("Compatible Subroutines:\n");
-		for (int j = 0; j < numCompS; ++j) {
-
-			glGetActiveSubroutineName(normalMappingProgramId, GL_FRAGMENT_SHADER, s[j], 256, &len, name);
-			printf("\t%d - %s\n", s[j], name);
-		}
-		printf("\n");
-		free(s);
-	}
-
-	defaultShadingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_FRAGMENT_SHADER, "DefaultShading");
-	texturedShadingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_FRAGMENT_SHADER, "TexturedShading");
-	normalMappingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_FRAGMENT_SHADER, "NormalMapping");
-	parallexMappingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_FRAGMENT_SHADER, "ParallexMapping");
-
-	vs_defaultShadingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_VERTEX_SHADER, "VS_DefaultShading");
-	vs_normalMappingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_VERTEX_SHADER, "VS_NormalMapping");
-	vs_parallexMappingSubroutineIndex = glGetSubroutineIndex(normalMappingProgramId, GL_VERTEX_SHADER, "VS_ParallexMapping");
+	glUniform1i(glGetUniformLocation(lightPassProgramId, "gPosition"), 0);
+	glUniform1i(glGetUniformLocation(lightPassProgramId, "gNormal"), 1);
+	glUniform1i(glGetUniformLocation(lightPassProgramId, "gColor"), 2);
 
 	glUseProgram(0);
 
-	/////////////////////////////////// light shaders /////////////////////////////////////////
+	/////////////////////////////////// light-shaders /////////////////////////////////////////
 
 	glUseProgram(lightProgramId);
 	VertexArray lightVertexArray;
@@ -361,186 +278,89 @@ int main() {
 
 		processInput(window, frametime);
 
-		glUseProgram(programId);
+		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUseProgram(geometryPassProgramId);
 		cubeVertexArray.Bind();
 
 		glm::mat4 projection = glm::perspective(glm::radians(fieldOfView), 1000.0f / 600.0f, 0.1f, 100.0f);
-		glUniformMatrix4fv(glGetUniformLocation(programId, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		glUniformMatrix4fv(glGetUniformLocation(geometryPassProgramId, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
-		//const float radius = 3.0f;
-		//float camX = sin(glfwGetTime()) * radius;
-		//float camZ = cos(glfwGetTime()) * radius;
-		//glm::mat4 view = glm::lookAt(glm::vec3(EYE_POSITION[0], EYE_POSITION[1], EYE_POSITION[2]), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		//glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		//glm::mat4 view = glm::lookAt(glm::vec3(camX, 0.0f, camZ), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-		glUniformMatrix4fv(glGetUniformLocation(programId, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(geometryPassProgramId, "view"), 1, GL_FALSE, glm::value_ptr(view));
 
-		glUniform3fv(glGetUniformLocation(programId, "objectColor"), 1, OBJECT_COLOR);
-		glUniform3fv(glGetUniformLocation(programId, "lightColor"), 1, LIGHT_COLOR);
-		glUniform3fv(glGetUniformLocation(programId, "lightPosition"), 1, LIGHT_POSITION);
-		float   eyePosition[] = { cameraPos.x, cameraPos.y, cameraPos.z };
-		glUniform3fv(glGetUniformLocation(programId, "eyePosition"), 1, eyePosition);
-
-		diffuseMap.Bind();
-		glUniform1i(glGetUniformLocation(programId, "material.diffuse"), 0);
-
-		specularMap.Bind();
-		glUniform1i(glGetUniformLocation(programId, "material.specular"), 1);
-
-		emissionMap.Bind();
-		glUniform1i(glGetUniformLocation(programId, "material.emission"), 2);
-
-		glUniform1f(glGetUniformLocation(programId, "material.shininess"), 64.0f);
-
-		if (texture)
-		{
-			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &textureSubroutineIndex);
-		}
-		else
-		{
-			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &colorSubroutineIndex);
-		}
-
-		//diffuseMap.Unbind();
-
-		//////////////////////////////////////////////////////////////////////// MAIN-OBJECT /////////////////////////////////////////////////////////////////////
+		//////// MAIN-OBJECT ////////
 
 		model = glm::mat4(1.0f);
 		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(35.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-		glUniformMatrix4fv(glGetUniformLocation(programId, "model"), 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix4fv(glGetUniformLocation(geometryPassProgramId, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
 		normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-		glUniformMatrix3fv(glGetUniformLocation(programId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+		glUniformMatrix3fv(glGetUniformLocation(geometryPassProgramId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(1.0, 0, 0));
+		glUniformMatrix4fv(glGetUniformLocation(geometryPassProgramId, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
+		normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+		glUniformMatrix3fv(glGetUniformLocation(geometryPassProgramId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.0, 0, 0));
+		glUniformMatrix4fv(glGetUniformLocation(geometryPassProgramId, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
+		normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+		glUniformMatrix3fv(glGetUniformLocation(geometryPassProgramId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0, 1.0, 0));
+		glUniformMatrix4fv(glGetUniformLocation(geometryPassProgramId, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
+		normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+		glUniformMatrix3fv(glGetUniformLocation(geometryPassProgramId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0, 1.0, 0));
+		glUniformMatrix4fv(glGetUniformLocation(geometryPassProgramId, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
+		normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+		glUniformMatrix3fv(glGetUniformLocation(geometryPassProgramId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		glUseProgram(0);
 		cubeVertexArray.Unbind();
 
-		////////////////////////// Objects shaded with normal-mapping //////////////////////////////////
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		glUseProgram(normalMappingProgramId);
+		///////// RENDER-PASS //////////
 
-		cubeVertexArray2.Bind();
+		glUseProgram(lightPassProgramId);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, gPosition);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, gNormal);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, gColor);
 
-		//glm::mat4 projection = glm::perspective(glm::radians(fieldOfView), 1000.0f / 600.0f, 0.1f, 100.0f);
-		glUniformMatrix4fv(glGetUniformLocation(normalMappingProgramId, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		glUniform3fv(glGetUniformLocation(lightPassProgramId, "lightColor"), 1, LIGHT_COLOR);
+		glUniform3fv(glGetUniformLocation(lightPassProgramId, "lightPosition"), 1, LIGHT_POSITION);
+		float   eyePosition[] = { cameraPos.x, cameraPos.y, cameraPos.z };
+		glUniform3fv(glGetUniformLocation(lightPassProgramId, "eyePosition"), 1, eyePosition);
+		glUniform1f(glGetUniformLocation(lightPassProgramId, "material.shininess"), 64.0f);
 
-		//glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-		glUniformMatrix4fv(glGetUniformLocation(normalMappingProgramId, "view"), 1, GL_FALSE, glm::value_ptr(view));
-
-		glUniform3fv(glGetUniformLocation(normalMappingProgramId, "objectColor"), 1, OBJECT_COLOR);
-		glUniform3fv(glGetUniformLocation(normalMappingProgramId, "lightColor"), 1, LIGHT_COLOR);
-		glUniform3fv(glGetUniformLocation(normalMappingProgramId, "lightPosition"), 1, LIGHT_POSITION);
-		float eyePosition2[] = { cameraPos.x, cameraPos.y, cameraPos.z };
-		glUniform3fv(glGetUniformLocation(normalMappingProgramId, "eyePosition"), 1, eyePosition2);
-
-		floorDiffuseMap.Bind();
-		glUniform1i(glGetUniformLocation(normalMappingProgramId, "material.diffuse"), 0);
-		floorNormalMap.Bind();
-		glUniform1i(glGetUniformLocation(normalMappingProgramId, "material.normalMap"), 1);
-		floorDepthMap.Bind();
-		glUniform1i(glGetUniformLocation(normalMappingProgramId, "material.depthMap"), 2);
-
-		glUniform1f(glGetUniformLocation(normalMappingProgramId, "material.shininess"), 64.0f);
-
-		if (texture)
-		{
-			if (normal && !parallex)
-			{
-				glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_normalMappingSubroutineIndex);
-				glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &normalMappingSubroutineIndex);
-			}
-			else if (parallex)
-			{
-				glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_parallexMappingSubroutineIndex);
-				glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &parallexMappingSubroutineIndex);
-			}
-			else
-			{
-				glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_defaultShadingSubroutineIndex);
-				glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &texturedShadingSubroutineIndex);
-			}
-		}
-		else
-		{
-			glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &vs_defaultShadingSubroutineIndex);
-			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &defaultShadingSubroutineIndex);
-		}
-
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, -0.65f, 0.0f));
-		model = glm::scale(model, glm::vec3(5.0f, 0.02f, 5.0f));
-		glUniformMatrix4fv(glGetUniformLocation(normalMappingProgramId, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-		normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-		glUniformMatrix3fv(glGetUniformLocation(normalMappingProgramId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		floorDiffuseMap.Unbind();
-		floorNormalMap.Unbind();
-		//floorDepthMap.Unbind();
-
-		// wall back
-		wallDiffuseMap.Bind();
-		glUniform1i(glGetUniformLocation(normalMappingProgramId, "material.diffuse"), 0);
-		wallNormalMap.Bind();
-		glUniform1i(glGetUniformLocation(normalMappingProgramId, "material.normalMap"), 1);
-		wallDepthMap.Bind();
-		glUniform1i(glGetUniformLocation(normalMappingProgramId, "material.depthMap"), 2);
-
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, -0.3f, -1.5f));
-		model = glm::scale(model, glm::vec3(5.0f, 1.5f, 0.5f));
-		//model = glm::scale(model, glm::vec3(5.0f, 5.0f, 0.5f));
-		glUniformMatrix4fv(glGetUniformLocation(normalMappingProgramId, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-		normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-		glUniformMatrix3fv(glGetUniformLocation(normalMappingProgramId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// wall front
-		//model = glm::mat4(1.0f);
-		//model = glm::translate(model, glm::vec3(0.0f, -0.3f, 1.5f));
-		//model = glm::scale(model, glm::vec3(5.0f, 1.5f, 0.5f));
-		//glUniformMatrix4fv(glGetUniformLocation(programId, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-		//normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-		//glUniformMatrix3fv(glGetUniformLocation(programId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
-
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// wall right
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(1.5f, -0.3f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.5f, 1.5f, 5.0f));
-		glUniformMatrix4fv(glGetUniformLocation(normalMappingProgramId, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-		normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-		glUniformMatrix3fv(glGetUniformLocation(normalMappingProgramId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// wall left
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.5f, -0.3f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.5f, 1.5f, 5.0f));
-		glUniformMatrix4fv(glGetUniformLocation(normalMappingProgramId, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-		normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-		glUniformMatrix3fv(glGetUniformLocation(normalMappingProgramId, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		wallDiffuseMap.Unbind();
-		wallNormalMap.Unbind();
-		wallDepthMap.Unbind();
-
-		glUseProgram(0);
-		cubeVertexArray2.Unbind();
+		quadVertexArray.Bind();
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		quadVertexArray.Unbind();
 
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
